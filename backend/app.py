@@ -11,6 +11,9 @@ from config import Config
 # Configure logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("backend-api")
+logger.info(f"Loaded SMTP_USER: {Config.SMTP_USER}")
+logger.info(f"Loaded SMTP_PASSWORD: {'[SET]' if Config.SMTP_PASSWORD else '[NOT SET]'}")
+logger.info(f"Loaded RECEIVER_EMAIL: {Config.RECEIVER_EMAIL}")
 
 app = FastAPI(
     title="Suyash Zinjurke's Portfolio API",
@@ -106,9 +109,11 @@ def health_check():
 
 @app.post("/api/contact", status_code=status.HTTP_200_OK)
 def contact_submit(payload: ContactRequest, background_tasks: BackgroundTasks):
+    # Debug: log what Config sees at request time
+    logger.info(f"[ENDPOINT] SMTP_USER='{Config.SMTP_USER}' PASSWORD_SET={bool(Config.SMTP_PASSWORD)} RECEIVER='{Config.RECEIVER_EMAIL}'")
     # Verify SMTP credentials availability
     if not Config.SMTP_USER or not Config.SMTP_PASSWORD or not Config.RECEIVER_EMAIL:
-        logger.error("SMTP environment variables are incomplete.")
+        logger.error(f"SMTP environment variables are incomplete. USER='{Config.SMTP_USER}' PASS_LEN={len(Config.SMTP_PASSWORD) if Config.SMTP_PASSWORD else 0} RECV='{Config.RECEIVER_EMAIL}'")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Mail server configuration error on host."

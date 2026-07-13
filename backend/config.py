@@ -1,8 +1,11 @@
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+# Load environment variables from .env file (anchored to this file's directory
+# so uvicorn's reloader subprocess always finds it regardless of CWD)
+_env_path = Path(__file__).resolve().parent / ".env"
+load_dotenv(dotenv_path=_env_path)
 
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "default-dev-secret-key-123")
