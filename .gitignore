@@ -20,6 +20,9 @@ Thumbs.db
 *.tmp
 *.swp
 
+# Windows reserved device names
+nul
+
 # IDE
 .vscode/
 .idea/
