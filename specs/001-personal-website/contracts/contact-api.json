@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ContactAPIContract",
+  "description": "API Contract for the Contact Form submission endpoint",
+  "endpoint": "/api/contact",
+  "method": "POST",
+  "request": {
+    "contentType": "application/json",
+    "schema": {
+      "type": "OBJECT",
+      "properties": {
+        "name": {
+          "type": "STRING",
+          "description": "Full name of the contact sender",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "email": {
+          "type": "STRING",
+          "description": "Email address of the contact sender",
+          "format": "email"
+        },
+        "message": {
+          "type": "STRING",
+          "description": "Message content",
+          "minLength": 10,
+          "maxLength": 2000
+        }
+      },
+      "required": ["name", "email", "message"]
+    }
+  },
+  "responses": {
+    "200": {
+      "description": "Form submission successful; email dispatched.",
+      "contentType": "application/json",
+      "schema": {
+        "type": "OBJECT",
+        "properties": {
+          "status": { "type": "STRING", "const": "success" },
+          "message": { "type": "STRING" }
+        },
+        "required": ["status", "message"]
+      }
+    },
+    "400": {
+      "description": "Validation failure in request payload.",
+      "contentType": "application/json",
+      "schema": {
+        "type": "OBJECT",
+        "properties": {
+          "status": { "type": "STRING", "const": "error" },
+          "message": { "type": "STRING" },
+          "errors": {
+            "type": "ARRAY",
+            "items": { "type": "STRING" }
+          }
+        },
+        "required": ["status", "message"]
+      }
+    },
+    "500": {
+      "description": "SMTP connection or mail delivery server error.",
+      "contentType": "application/json",
+      "schema": {
+        "type": "OBJECT",
+        "properties": {
+          "status": { "type": "STRING", "const": "error" },
+          "message": { "type": "STRING" }
+        },
+        "required": ["status", "message"]
+      }
+    }
+  }
+}
