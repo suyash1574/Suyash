@@ -14,41 +14,64 @@ const OFFLINE_REPOS = [
     topics: ['Flask', 'Gemini AI', 'LangChain']
   },
   {
-    id: 'Agriculture-Prediction',
-    title: 'Agriculture-Prediction',
-    desc: 'A machine learning recommended system targeting soil, heat, and moisture features to predict ideal crop outcomes.',
-    url: 'https://github.com/Suyash-Projects/Agriculture-Prediction',
-    language: 'Jupyter Notebook',
+    id: 'BigQuery-ETL-Pipeline',
+    title: 'BigQuery-ETL-Pipeline',
+    desc: 'An automated ETL pipeline loading, converting, and schema-validating large transactional sales logs into Google BigQuery.',
+    url: 'https://github.com/Suyash-Projects/BigQuery-ETL-Pipeline',
+    language: 'Python',
     stars: 1,
     forks: 0,
     issues: 0,
-    pushedAt: '2026-06-15T00:00:00Z',
-    topics: ['CNN', 'XGBoost', 'Feature Engineering']
+    pushedAt: '2026-07-10T00:00:00Z',
+    topics: ['Python', 'SQL', 'BigQuery', 'ETL']
   },
   {
-    id: 'Sentimental-Analysis',
-    title: 'Sentimental-Analysis',
-    desc: 'An NLP processing pipeline evaluating text strings and categorizing emotional scorecards.',
-    url: 'https://github.com/Suyash-Projects/Sentimental-Analysis',
-    language: 'Jupyter Notebook',
-    stars: 0,
-    forks: 0,
-    issues: 0,
-    pushedAt: '2026-06-14T00:00:00Z',
-    topics: ['NLP', 'VADER', 'Text Processing']
-  },
-  {
-    id: 'Facial-Expression-and-Gender-Detection',
-    title: 'Facial-Expression-and-Gender-Detection',
-    desc: 'A computer vision pipeline analyzing facial features in real-time video streams.',
-    url: 'https://github.com/Suyash-Projects/Facial-Expression-and-Gender-Detection',
+    id: 'Agriculture-Prediction-Plant-Analysis',
+    title: 'Agriculture-Prediction-Plant-Analysis',
+    desc: 'Computer vision and deep learning models detecting crop anomalies, leaf classifications, and yield parameters.',
+    url: 'https://github.com/Suyash-Projects/Agriculture-Prediction-Plant-Analysis',
     language: 'Python',
     stars: 0,
     forks: 0,
     issues: 0,
-    pushedAt: '2026-06-13T00:00:00Z',
-    topics: ['OpenCV', 'Keras', 'Computer Vision']
+    pushedAt: '2026-07-08T00:00:00Z',
+    topics: ['Deep Learning', 'PyTorch', 'Computer Vision']
+  },
+  {
+    id: 'Blog-Generation-System',
+    title: 'Blog-Generation-System',
+    desc: 'A text-generation backend engine compiling rich blog templates from user bullet points using Llama-3 NLP APIs.',
+    url: 'https://github.com/Suyash-Projects/Blog-Generation-System',
+    language: 'Python',
+    stars: 0,
+    forks: 0,
+    issues: 0,
+    pushedAt: '2026-07-05T00:00:00Z',
+    topics: ['NLP', 'Llama-3', 'Flask', 'Prompt Engineering']
+  },
+  {
+    id: 'Credit-Card-Dashboard',
+    title: 'Credit-Card-Dashboard',
+    desc: 'Interactive visual reporting dashboard analyzing transaction trends, customer retention rates, and risk profiles.',
+    url: 'https://github.com/Suyash-Projects/Credit-Card-Dashboard',
+    language: 'Power BI',
+    stars: 0,
+    forks: 0,
+    issues: 0,
+    pushedAt: '2026-07-01T00:00:00Z',
+    topics: ['Power BI', 'Data Analysis', 'DAX']
   }
+];
+
+const ALLOWED_REPOS = [
+  'main-copy',
+  'vedrix',
+  'bigquery-etl-pipeline',
+  'agriculture-prediction-plant-analysis',
+  'blog-generation-system',
+  'credit-card-dashboard',
+  'premanand-ai',
+  'agriculture-prediction'
 ];
 
 export default function Projects({ onSelectProject }) {
@@ -89,15 +112,23 @@ export default function Projects({ onSelectProject }) {
         });
 
         for (const r of mergedRepos) {
+          // Filter by allowed list to keep only the best AI-selected projects
+          const lowercaseName = r.name.toLowerCase();
+          if (!ALLOWED_REPOS.includes(lowercaseName)) continue;
+
           // Skip basic forks without stars
           if (r.fork && r.stargazers_count === 0) continue;
 
-          const lowercaseName = r.name.toLowerCase();
           if (!seenNames.has(lowercaseName)) {
             seenNames.add(lowercaseName);
+            
+            // Map 'main-copy' (the featured project repository) to 'ai-interview' ID
+            const repoId = r.name === 'main-copy' ? 'ai-interview' : r.name;
+            const repoTitle = r.name === 'main-copy' ? 'AI Interview System' : r.name;
+
             deduped.push({
-              id: r.name, // Key name used for mapping to modal details
-              title: r.name,
+              id: repoId, // Key name used for mapping to modal details
+              title: repoTitle,
               desc: r.description || 'No description provided.',
               url: r.html_url,
               language: r.language,
