@@ -63,17 +63,6 @@ const OFFLINE_REPOS = [
   }
 ];
 
-const ALLOWED_REPOS = [
-  'main-copy',
-  'vedrix',
-  'bigquery-etl-pipeline',
-  'agriculture-prediction-plant-analysis',
-  'blog-generation-system',
-  'credit-card-dashboard',
-  'premanand-ai',
-  'agriculture-prediction'
-];
-
 export default function Projects({ onSelectProject }) {
   const [repos, setRepos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -82,68 +71,15 @@ export default function Projects({ onSelectProject }) {
   useEffect(() => {
     async function fetchRepos() {
       try {
-        const [userRes, orgRes] = await Promise.all([
-          fetch('https://api.github.com/users/suyash1574/repos'),
-          fetch('https://api.github.com/orgs/Suyash-Projects/repos')
-        ]);
+        const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+        const response = await fetch(`${API_URL}/api/projects`);
 
-        if (!userRes.ok || !orgRes.ok) {
-          // If rate limited or error occurred
-          if (userRes.status === 403 || orgRes.status === 403) {
-            throw new Error('rate-limit');
-          }
+        if (!response.ok) {
           throw new Error('network-error');
         }
 
-        const userRepos = await userRes.json();
-        const orgRepos = await orgRes.json();
-
-        const mergedRepos = [...userRepos, ...orgRepos];
-
-        // Dedup (giving preference to organization repos) & filter forks
-        const deduped = [];
-        const seenNames = new Set();
-
-        // Sort so Organization comes first, so we keep org repos in case of name clash
-        mergedRepos.sort((a, b) => {
-          const aIsOrg = a.owner?.type === 'Organization' ? 1 : 0;
-          const bIsOrg = b.owner?.type === 'Organization' ? 1 : 0;
-          return bIsOrg - aIsOrg;
-        });
-
-        for (const r of mergedRepos) {
-          // Filter by allowed list to keep only the best AI-selected projects
-          const lowercaseName = r.name.toLowerCase();
-          if (!ALLOWED_REPOS.includes(lowercaseName)) continue;
-
-          // Skip basic forks without stars
-          if (r.fork && r.stargazers_count === 0) continue;
-
-          if (!seenNames.has(lowercaseName)) {
-            seenNames.add(lowercaseName);
-            
-            // Map 'main-copy' (the featured project repository) to 'ai-interview' ID
-            const repoId = r.name === 'main-copy' ? 'ai-interview' : r.name;
-            const repoTitle = r.name === 'main-copy' ? 'AI Interview System' : r.name;
-
-            deduped.push({
-              id: repoId, // Key name used for mapping to modal details
-              title: repoTitle,
-              desc: r.description || 'No description provided.',
-              url: r.html_url,
-              language: r.language,
-              stars: r.stargazers_count,
-              forks: r.forks_count,
-              issues: r.open_issues_count,
-              pushedAt: r.pushed_at,
-              topics: r.topics || []
-            });
-          }
-        }
-
-        // Sort by recent pushes
-        deduped.sort((a, b) => new Date(b.pushedAt) - new Date(a.pushedAt));
-        setRepos(deduped);
+        const data = await response.json();
+        setRepos(data);
       } catch (err) {
         console.error(err);
         setError(err.message);

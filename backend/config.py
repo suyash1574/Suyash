@@ -17,5 +17,8 @@ class Config:
     SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
     RECEIVER_EMAIL = os.getenv("RECEIVER_EMAIL", "")
     
+    # NVIDIA NIM API Key
+    NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY", "")
+    
     # Debug/Environment mode
     DEBUG = os.getenv("FLASK_DEBUG", "1") == "1"
