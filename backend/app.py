@@ -68,14 +68,16 @@ def enforce_rate_limit(client_id: str) -> None:
 
 
 def request_completion(endpoint: str, api_key: str, model: str, messages: list[dict[str, str]]) -> str:
-    payload = json.dumps(
-        {
-            "model": model,
-            "messages": [{"role": "system", "content": SYSTEM_PROMPT}, *messages],
-            "temperature": 0.35,
-            "max_tokens": 700,
-        }
-    ).encode("utf-8")
+    payload_data: dict[str, object] = {
+        "model": model,
+        "messages": [{"role": "system", "content": SYSTEM_PROMPT}, *messages],
+        "temperature": 0.35,
+        "max_tokens": 700,
+    }
+    if "integrate.api.nvidia.com" in endpoint:
+        payload_data["chat_template_kwargs"] = {"enable_thinking": False}
+
+    payload = json.dumps(payload_data).encode("utf-8")
     request = urllib.request.Request(
         endpoint,
         data=payload,
