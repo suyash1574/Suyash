@@ -41,19 +41,6 @@ const experience = [
     ],
     tags: ["Azure", "RAG", "LangChain", "Python", "Embedded software"],
   },
-  {
-    index: "02",
-    date: "FEB 2025 — APR 2025",
-    role: "Data Analytics Intern",
-    company: "NexGen Analytix",
-    summary: "Translated raw business data into reliable reporting workflows and decision-ready dashboards.",
-    bullets: [
-      "Created interactive Power BI and Tableau dashboards to track business KPIs and make reporting more accessible to teams.",
-      "Built Python and SQL ETL pipelines to clean, process, and restructure raw database datasets.",
-      "Optimized recurring analytics workflows, reducing manual reporting effort and improving data accessibility.",
-    ],
-    tags: ["Python", "SQL", "Power BI", "Tableau", "ETL"],
-  },
 ];
 
 const projects = [
