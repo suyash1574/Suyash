@@ -23,6 +23,7 @@ import {
   Terminal,
   X,
 } from "lucide-react";
+import { PortfolioAssistant } from "@/components/PortfolioAssistant";
 
 const resumeUrl = "https://github.com/suyash1574/Suyash/raw/refs/heads/main/frontend/public/assets/resume/Suyash_Zinjurke.pdf";
 
@@ -203,6 +204,7 @@ function Home() {
       </main>
 
       <footer className="site-footer section-shell"><div className="footer-brand"><span className="brand-mark" aria-hidden="true"><span>S</span><b>&gt;</b><i /></span><span>Built with React, CSS, and a bias toward useful.</span></div><span>© 2026 Suyash Zinjurke</span><a href="#top" onClick={(event) => { event.preventDefault(); scrollTo("top"); }}>Back to top <ArrowUpRight size={14} /></a></footer>
+      <PortfolioAssistant />
     </div>
   );
 }
