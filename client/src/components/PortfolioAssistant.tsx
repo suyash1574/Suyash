@@ -1,5 +1,6 @@
 import { Bot, Loader2, Send, Sparkles, X } from "lucide-react";
 import { FormEvent, useEffect, useRef, useState } from "react";
+import { readTextStream } from "@/lib/readTextStream";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -40,7 +41,8 @@ export function PortfolioAssistant() {
     if (!message || isSending) return;
 
     const nextMessages = [...messages, { role: "user" as const, content: message }];
-    setMessages(nextMessages);
+    const assistantMessageIndex = nextMessages.length;
+    setMessages([...nextMessages, { role: "assistant", content: "" }]);
     setInput("");
     setIsSending(true);
 
@@ -50,22 +52,35 @@ export function PortfolioAssistant() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: nextMessages.slice(-8) }),
       });
-      const payload = (await response.json()) as { message?: string; detail?: string };
 
-      if (!response.ok || !payload.message) {
+      if (!response.ok || !response.body) {
+        const payload = (await response.json().catch(() => ({}))) as { detail?: string };
         throw new Error(payload.detail || "The assistant is temporarily unavailable.");
       }
 
-      setMessages(current => [...current, { role: "assistant", content: payload.message! }]);
+      const responseText = await readTextStream(response.body, streamedText => {
+        setMessages(current =>
+          current.map((currentMessage, index) =>
+            index === assistantMessageIndex ? { ...currentMessage, content: streamedText } : currentMessage
+          )
+        );
+      });
+
+      if (!responseText.trim()) {
+        throw new Error("The assistant returned an empty response.");
+      }
     } catch {
-      setMessages(current => [
-        ...current,
-        {
-          role: "assistant",
-          content:
-            "I’m temporarily unavailable. For opportunities or project conversations, please email Suyash at zinjurke77h@gmail.com.",
-        },
-      ]);
+      setMessages(current =>
+        current.map((currentMessage, index) =>
+          index === assistantMessageIndex
+            ? {
+                ...currentMessage,
+                content:
+                  "I’m temporarily unavailable. For opportunities or project conversations, please email Suyash at zinjurke77h@gmail.com.",
+              }
+            : currentMessage
+        )
+      );
     } finally {
       setIsSending(false);
     }
@@ -97,7 +112,7 @@ export function PortfolioAssistant() {
             {messages.map((message, index) => (
               <div className={`assistant-message ${message.role === "user" ? "is-user" : "is-assistant"}`} key={`${message.role}-${index}`}>
                 {message.role === "assistant" && <Sparkles size={13} aria-hidden="true" />}
-                <div className="assistant-message-content">{message.content}</div>
+                <div className="assistant-message-content">{message.content || <span className="assistant-streaming-cursor" aria-label="Generating response" />}</div>
               </div>
             ))}
             {isSending && (

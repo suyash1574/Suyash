@@ -10,6 +10,7 @@ from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 
@@ -67,12 +68,13 @@ def enforce_rate_limit(client_id: str) -> None:
     RATE_LIMITS[client_id] = (count + 1, reset_at)
 
 
-def request_completion(endpoint: str, api_key: str, model: str, messages: list[dict[str, str]]) -> str:
+def stream_completion(endpoint: str, api_key: str, model: str, messages: list[dict[str, str]]):
     payload_data: dict[str, object] = {
         "model": model,
         "messages": [{"role": "system", "content": SYSTEM_PROMPT}, *messages],
         "temperature": 0.35,
         "max_tokens": 700,
+        "stream": True,
     }
     if "integrate.api.nvidia.com" in endpoint:
         payload_data["chat_template_kwargs"] = {"enable_thinking": False}
@@ -85,26 +87,32 @@ def request_completion(endpoint: str, api_key: str, model: str, messages: list[d
         method="POST",
     )
     with urllib.request.urlopen(request, timeout=30) as response:
-        data = json.loads(response.read().decode("utf-8"))
-    content = data.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
-    if not content:
-        raise ValueError("Provider returned an empty response")
-    return content
+        emitted = False
+        for raw_line in response:
+            line = raw_line.decode("utf-8").strip()
+            if not line.startswith("data:"):
+                continue
+
+            event_data = line.removeprefix("data:").strip()
+            if event_data == "[DONE]":
+                break
+
+            try:
+                data = json.loads(event_data)
+            except json.JSONDecodeError:
+                continue
+
+            delta = data.get("choices", [{}])[0].get("delta", {})
+            content = delta.get("content")
+            if content:
+                emitted = True
+                yield content
+
+        if not emitted:
+            raise ValueError("Provider returned an empty streamed response")
 
 
-@app.get("/", tags=["health"])
-@app.get("/health", tags=["health"])
-def health_check() -> dict[str, str]:
-    """Return a small, unauthenticated liveness response for Render."""
-    return health_payload()
-
-
-@app.post("/api/assistant/chat", tags=["assistant"])
-def assistant_chat(payload: ChatRequest, request: Request) -> dict[str, str]:
-    client_id = request.client.host if request.client else "unknown"
-    enforce_rate_limit(client_id)
-    messages = [{"role": message.role, "content": message.content.strip()} for message in payload.messages]
-
+def stream_assistant_response(messages: list[dict[str, str]]):
     providers = [
         (
             os.getenv("NVIDIA_NIM_API_KEY") or os.getenv("NVIDIA_API_KEY", ""),
@@ -119,17 +127,46 @@ def assistant_chat(payload: ChatRequest, request: Request) -> dict[str, str]:
             "Groq",
         ),
     ]
-    failures: list[str] = []
+    configured = [provider for provider in providers if provider[0]]
+    if not configured:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="The portfolio assistant is not configured yet. Please email Suyash at zinjurke77h@gmail.com.",
+        )
 
-    for api_key, endpoint, model, provider_name in providers:
-        if not api_key:
-            continue
+    failures: list[str] = []
+    for api_key, endpoint, model, provider_name in configured:
+        emitted = False
         try:
-            return {"message": request_completion(endpoint, api_key, model, messages)}
+            for token in stream_completion(endpoint, api_key, model, messages):
+                emitted = True
+                yield token
+            if emitted:
+                return
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError) as exc:
             failures.append(f"{provider_name}: {exc}")
+            if emitted:
+                yield "\n\nI’m sorry, that response was interrupted. Please try again."
+                return
 
-    message = "The portfolio assistant is temporarily unavailable. Please email Suyash at zinjurke77h@gmail.com."
-    if not failures:
-        message = "The portfolio assistant is not configured yet. Please email Suyash at zinjurke77h@gmail.com."
-    raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=message)
+    yield "I’m temporarily unavailable. For opportunities or project conversations, please email Suyash at zinjurke77h@gmail.com."
+
+
+@app.get("/", tags=["health"])
+@app.get("/health", tags=["health"])
+def health_check() -> dict[str, str]:
+    """Return a small, unauthenticated liveness response for Render."""
+    return health_payload()
+
+
+@app.post("/api/assistant/chat", tags=["assistant"])
+def assistant_chat(payload: ChatRequest, request: Request) -> StreamingResponse:
+    client_id = request.client.host if request.client else "unknown"
+    enforce_rate_limit(client_id)
+    messages = [{"role": message.role, "content": message.content.strip()} for message in payload.messages]
+
+    return StreamingResponse(
+        stream_assistant_response(messages),
+        media_type="text/plain; charset=utf-8",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
