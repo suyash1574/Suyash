@@ -104,19 +104,28 @@ def assistant_chat(payload: ChatRequest, request: Request) -> dict[str, str]:
     messages = [{"role": message.role, "content": message.content.strip()} for message in payload.messages]
 
     providers = [
-        ("NVIDIA_NIM_API_KEY", "https://integrate.api.nvidia.com/v1/chat/completions", "nvidia/nemotron-3.5-lightning-30b-a3b"),
-        ("GROQ_API_KEY", "https://api.groq.com/openai/v1/chat/completions", "llama-3.3-70b-versatile"),
+        (
+            os.getenv("NVIDIA_NIM_API_KEY") or os.getenv("NVIDIA_API_KEY", ""),
+            "https://integrate.api.nvidia.com/v1/chat/completions",
+            "nvidia/nemotron-3.5-lightning-30b-a3b",
+            "NVIDIA NIM",
+        ),
+        (
+            os.getenv("GROQ_API_KEY", ""),
+            "https://api.groq.com/openai/v1/chat/completions",
+            "llama-3.3-70b-versatile",
+            "Groq",
+        ),
     ]
     failures: list[str] = []
 
-    for key_name, endpoint, model in providers:
-        api_key = os.getenv(key_name, "")
+    for api_key, endpoint, model, provider_name in providers:
         if not api_key:
             continue
         try:
             return {"message": request_completion(endpoint, api_key, model, messages)}
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError) as exc:
-            failures.append(f"{key_name}: {exc}")
+            failures.append(f"{provider_name}: {exc}")
 
     message = "The portfolio assistant is temporarily unavailable. Please email Suyash at zinjurke77h@gmail.com."
     if not failures:
