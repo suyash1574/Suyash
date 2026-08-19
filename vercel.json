@@ -6,6 +6,10 @@
   "outputDirectory": "dist/public",
   "rewrites": [
     {
+      "source": "/manus-storage/:path*",
+      "destination": "https://suyashai-d3r2yxvb.manus.space/manus-storage/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

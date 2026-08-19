@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import { PortfolioAssistant } from "@/components/PortfolioAssistant";
 
-const resumeUrl = "https://github.com/suyash1574/Suyash/raw/refs/heads/main/frontend/public/assets/resume/Suyash_Zinjurke.pdf";
+const resumeUrl = "/manus-storage/Suyash_Zinjurke_AI_Engineer_Resume_16c02702.pdf";
 
 const experience = [
   {
@@ -120,7 +120,7 @@ function Home() {
           {["about", "experience", "projects", "contact"].map((item, i) => (
             <button key={item} onClick={() => scrollTo(item)}><span>0{i + 1}</span>{item}</button>
           ))}
-          <a className="nav-resume" href={resumeUrl} target="_blank" rel="noreferrer"><Download size={14} /> Resume</a>
+          <a className="nav-resume" href={resumeUrl} download="Suyash_Zinjurke_AI_Engineer_Resume.pdf"><Download size={14} /> Resume</a>
         </nav>
         <button className="menu-toggle" onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? "Close menu" : "Open menu"}>
           {menuOpen ? <X size={20} /> : <Menu size={20} />}
@@ -136,7 +136,7 @@ function Home() {
             <p className="hero-intro">I build practical AI systems for software maintenance, diagnostics, and developer workflows — from retrieval pipelines to agentic automation that ships useful outcomes.</p>
             <div className="hero-actions">
               <button className="button button-primary" onClick={() => scrollTo("projects")}>Inspect the work <ArrowUpRight size={17} /></button>
-              <a className="button button-ghost" href={resumeUrl} target="_blank" rel="noreferrer"><FileText size={16} /> Download resume</a>
+              <a className="button button-ghost" href={resumeUrl} download="Suyash_Zinjurke_AI_Engineer_Resume.pdf"><FileText size={16} /> Download resume</a>
             </div>
             <div className="hero-links">
               <a href="https://github.com/suyash1574" target="_blank" rel="noreferrer"><Github size={16} /> GitHub</a>
