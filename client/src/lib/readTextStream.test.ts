@@ -6,8 +6,8 @@ describe("readTextStream", () => {
     const encoder = new TextEncoder();
     const stream = new ReadableStream<Uint8Array>({
       start(controller) {
-        controller.enqueue(encoder.encode("Suyash builds "));
-        controller.enqueue(encoder.encode("practical AI systems."));
+        controller.enqueue(encoder.encode('data: {"token":"Suy'));
+        controller.enqueue(encoder.encode('ash builds "}\n\ndata: {"token":"practical AI systems."}\n\ndata: [DONE]\n\n'));
         controller.close();
       },
     });

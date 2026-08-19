@@ -128,11 +128,6 @@ def stream_assistant_response(messages: list[dict[str, str]]):
         ),
     ]
     configured = [provider for provider in providers if provider[0]]
-    if not configured:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="The portfolio assistant is not configured yet. Please email Suyash at zinjurke77h@gmail.com.",
-        )
 
     failures: list[str] = []
     for api_key, endpoint, model, provider_name in configured:
@@ -140,16 +135,19 @@ def stream_assistant_response(messages: list[dict[str, str]]):
         try:
             for token in stream_completion(endpoint, api_key, model, messages):
                 emitted = True
-                yield token
+                yield f"data: {json.dumps({'token': token})}\n\n"
             if emitted:
+                yield "data: [DONE]\n\n"
                 return
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, ValueError) as exc:
             failures.append(f"{provider_name}: {exc}")
             if emitted:
-                yield "\n\nI’m sorry, that response was interrupted. Please try again."
+                yield f"data: {json.dumps({'token': '  I’m sorry, that response was interrupted. Please try again.'})}\n\n"
+                yield "data: [DONE]\n\n"
                 return
 
-    yield "I’m temporarily unavailable. For opportunities or project conversations, please email Suyash at zinjurke77h@gmail.com."
+    yield f"data: {json.dumps({'token': 'I’m temporarily unavailable. For opportunities or project conversations, please email Suyash at zinjurke77h@gmail.com.'})}\n\n"
+    yield "data: [DONE]\n\n"
 
 
 @app.get("/", tags=["health"])
@@ -165,8 +163,14 @@ def assistant_chat(payload: ChatRequest, request: Request) -> StreamingResponse:
     enforce_rate_limit(client_id)
     messages = [{"role": message.role, "content": message.content.strip()} for message in payload.messages]
 
+    if not (os.getenv("NVIDIA_NIM_API_KEY") or os.getenv("NVIDIA_API_KEY") or os.getenv("GROQ_API_KEY")):
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="The portfolio assistant is not configured yet. Please email Suyash at zinjurke77h@gmail.com.",
+        )
+
     return StreamingResponse(
         stream_assistant_response(messages),
-        media_type="text/plain; charset=utf-8",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache, no-transform", "Connection": "keep-alive", "X-Accel-Buffering": "no"},
     )
